@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gender Reveal</title>
+
+<style>
+:root{
+  --bleu: #BCE7F5;         /* bleu pastel */
+  --rose: #FFC6DD;         /* rose pastel */
+  --creme: #FFF8F0;        /* fond crème */
+  --noir: #000000;
+  --blanc: #FFFFFF;
+  --gris: #D6D6D6;         /* gris clair pour les bâtons neutres */
+  --radius: 14px;
+}
+
+/* BODY */
+html, body {
+  height:100%;
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(to right, var(--bleu), var(--rose)); /* Dégradé horizontal bleu→rose */
+  color: var(--noir);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* LANGUAGE SELECT */
+.languageSelector {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+.languageSelector img {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  transition: 0.2s;
+}
+.languageSelector img.active {
+  border-color: var(--noir);
+}
+
+/* CONTAINER PRINCIPAL */
+.container {
+  width: 100%;
+  max-width: 980px;
+  background: var(--blanc);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 40px rgba(200,200,200,0.4);
+  padding: 18px;
+  overflow: hidden;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  background: var(--bleu);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;  /* Texte dégradé */
+}
+header p {
+  margin: 0;
+  color: var(--noir);
+  font-size: 14px;
+}
+
+/* BOUTONS GÉNÉRIQUES */
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+/* Bouton RECOMMENCER → fond blanc, contour rose, texte rose */
+.btn.restart,
+#resetBtn {
+  background: var(--blanc);
+  border: 2px solid var(--rose);
+  color: var(--rose);
+}
+.btn.restart:hover,
+#resetBtn:hover {
+  filter: brightness(1.1);
+}
+
+/* Bouton EXPLICATIONS → fond blanc, contour rose, texte rose */
+.btn.explain,
+#howBtn {
+  background: var(--blanc);
+  border: 2px solid var(--rose);
+  color: var(--rose);
+}
+.btn.explain:hover,
+#howBtn:hover {
+  filter: brightness(1.1);
+}
+
+/* BOARD (2 panneaux) */
+.board {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 18px;
+}
+@media(max-width:820px){ .board { grid-template-columns:1fr; } }
+
+/* SOUS-PANNEAUX */
+.sidebar {
+  background: #fff;
+  border: 2px solid var(--bleu); /* cadre bleu */
+  padding: 16px;
+  border-radius: 12px;
+  width: 250px;       /* largeur fixe */
+  flex-shrink: 0;     /* éviter que le conteneur réduise sa largeur */
+
+}
+.pile {
+  background: #fff;
+  border: 2px solid var(--rose); /* cadre rose */
+  padding: 16px;
+  border-radius: 12px;
+}
+
+/* CHOIX D’ÉQUIPE */
+.teamSelect {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.teamCard {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  color: #fff;
+  font-weight: 600;
+  transition: 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.teamCard.girl {
+  background: var(--blanc);
+  border: 2px solid var(--bleu);
+  color: var(--bleu);
+}
+.teamCard.boy {
+  background: var(--blanc);
+  border: 2px solid var(--bleu);
+  color: var(--bleu);
+}
+.teamCard.active {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  filter: brightness(1.1);
+}
+.teamIcon {
+  font-size: 26px;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* BOUTONS DE NOMBRE DE STICKS */
+.takeBtns {
+  display: flex;
+  justify-content: flex-end; /* alignés à droite */
+  gap: 8px;
+  margin-top: 10px;
+}
+.takeBtns .btn {
+  background: var(--blanc);
+  border: 2px solid var(--rose);
+  color: var(--rose);
+}
+.takeBtns .btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+/* BÂTONS ("sticks") */
+#sticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  min-height: 140px;
+}
+.stick {
+  width: 18px;
+  height: 88px;
+  border-radius: 6px;
+  background: var(--gris);   /* gris neutre */
+  box-shadow: inset 0 -6px 10px rgba(0,0,0,0.06);
+  transition: transform .22s, opacity .15s;
+}
+.stick.colored-pink {
+  background: linear-gradient(180deg,#FFC6DD,#FF9CCF);
+  transform: translateY(-6px) rotate(-2deg);
+  box-shadow: 0 8px 22px rgba(255,102,170,0.25);
+}
+.stick.colored-blue {
+  background: linear-gradient(180deg,#BCE7F5,#8FCFEB);
+  transform: translateY(-6px) rotate(2deg);
+  box-shadow: 0 8px 22px rgba(80,140,255,0.25);
+}
+
+/* STATUT ET ZONE DE TEXTE */
+.status {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.6);
+  font-weight: 700;
+  text-align: center;
+  color: var(--noir);
+}
+
+/* CONFETTIS + OVERLAY */
+canvas#confettiCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(188,231,245,0.4);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.98);
+  transition: opacity .24s, transform .18s;
+}
+.overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.cardReveal {
+  background: #fff;
+  padding: 28px;
+  border-radius: 14px;
+  text-align: center;
+  width: min(92%,520px);
+  box-shadow: 0 40px 80px rgba(200,200,200,0.3);
+  border: 2px solid var(--rose);
+}
+
+/* Pop-up et bouton fille */
+.cardReveal.girl {
+  border: 2px solid var(--rose);
+  background: var(--blanc);
+  color: var(--rose);
+}
+.cardReveal.girl .btn {
+  border: 2px solid var(--rose);
+  background: var(--blanc);
+  color: var(--rose);
+}
+
+/* Pop-up et bouton garçon */
+.cardReveal.boy {
+  border: 2px solid var(--bleu);
+  background: var(--blanc);
+  color: var(--bleu);
+}
+.cardReveal.boy .btn {
+  border: 2px solid var(--bleu);
+  background: var(--blanc);
+  color: var(--bleu);
+}
+
+/* INPUT */
+input[type=number] {
+  width: 90px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: transparent;
+  color: inherit;
+}
+</style>
+</head>
+
+<body>
+<canvas id="confettiCanvas"></canvas>
+
+<!-- LANGUAGE SELECT -->
+<div class="languageSelector">
+  <img src="https://flagcdn.com/fr.svg" alt="FR" data-lang="fr" class="active">
+  <img src="https://flagcdn.com/it.svg" alt="IT" data-lang="it">
+  <img src="https://flagcdn.com/gb.svg" alt="EN" data-lang="en">
+</div>
+
+<div class="container">
+
+  <header>
+    <div>
+      <h1 data-text="title">Gender Reveal Game</h1>
+      <p data-text="subtitle">Joue pour connaître le sexe du bébé d'Eleonora et Etienne</p>
+    </div>
+    <div class="controls">
+      <button class="btn" id="resetBtn" data-text="restartBtn">Recommencer</button>
+      <button class="btn primary" id="howBtn" data-text="howBtn">Explications</button>
+    </div>
+  </header>
+
+  <div class="board">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+       <div class="teamSelect">
+         <div class="teamCard girl" id="teamGirl">
+           <span class="teamIcon">🎀</span>
+           <span data-text="teamGirl">Équipe<br>Fille</span>
+         </div>
+         <div class="teamCard boy" id="teamBoy">
+           <span class="teamIcon">🎩</span>
+           <span data-text="teamBoy">Équipe<br>Garçon</span>
+         </div>
+      </div>
+
+      <label style="font-size:13px;color:var(--muted)" data-text="sticksLabel">Nombre de bâtons</label>
+      <input id="sticksInput" type="number" min="7" max="199" value="21">
+
+      <div class="status" id="statusBox" data-text="statusBox">En attente d'un choix...</div>
+    </aside>
+
+    <!-- PILE -->
+    <section class="pile">
+      <strong data-text="sticksLeft">Bâtons restants :</strong> <span id="remaining">21</span>
+      <div id="turnInfo" style="margin-bottom:10px">Tour : —</div>
+
+      <div id="sticks" style="margin-bottom:12px;"></div>
+
+      <div class="takeBtns" id="playerControls" aria-hidden="true">
+        <button class="btn" data-take="1">1</button>
+        <button class="btn" data-take="2">2</button>
+        <button class="btn" data-take="3">3</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- REVEAL -->
+  <div class="overlay" id="overlay">
+    <div class="cardReveal">
+      <div id="revealSex">🎀 C'EST UNE FILLE 🎀</div>
+      <button class="btn primary" id="closeReveal" data-text="replayBtn">Rejouer</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ========== TRANSLATIONS ==========
+const translations = {
+  fr: {
+    title: "Gender Reveal Game",
+    subtitle: "Joue pour connaître le sexe du bébé d'Eleonora et Etienne",
+    restartBtn: "Recommencer",
+    howBtn: "Explications",
+    teamGirl: "Équipe<br>Fille",
+    teamBoy: "Équipe<br>Garçon",
+    sticksLabel: "Nombre de bâtons",
+    statusBox: "En attente d'un choix...",
+    sticksLeft: "Bâtons restants :",
+    replayBtn: "Rejouer",
+    revealGirl: "🎀 C'EST UNE FILLE 🎀",
+    revealBoy: "🎩 C'EST UN GARÇON 🎩",
+    alertHow: "Règles :\n- Choisis ton équipe : fille 🎀 ou garçon 🎩.\n- Tu joues contre l’ordinateur 💻.\n- À chaque tour, tu colories entre 1 et 3 bâtons.\n- Celui qui colorie le dernier bâton révèle le genre du bébé 👶."
+  },
+  it: {
+    title: "Gender Reveal Game",
+    subtitle: "Gioca per scoprire il sesso del bambino di Eleonora e Etienne",
+    restartBtn: "Ricomincia",
+    howBtn: "Spiegazioni",
+    teamGirl: "Squadra<br>Ragazza",
+    teamBoy: "Squadra<br>Ragazzo",
+    sticksLabel: "Numero di bastoncini",
+    statusBox: "In attesa di una scelta...",
+    sticksLeft: "Bastoncini rimanenti:",
+    replayBtn: "Rigioca",
+    revealGirl: "🎀 È UNA RAGAZZA 🎀",
+    revealBoy: "🎩 È UN RAGAZZO 🎩",
+    alertHow: "Regole:\n- Scegli la tua squadra: ragazza 🎀 o ragazzo 🎩.\n- Giochi contro il computer 💻.\n- Ad ogni turno, colora tra 1 e 3 bastoncini.\n- Chi colora l'ultimo bastoncino rivela il sesso del bambino 👶."
+  },
+  en: {
+    title: "Gender Reveal Game",
+    subtitle: "Play to discover Eleonora and Etienne's baby gender",
+    restartBtn: "Restart",
+    howBtn: "Instructions",
+    teamGirl: "Team<br>Girl",
+    teamBoy: "Team<br>Boy",
+    sticksLabel: "Number of sticks",
+    statusBox: "Waiting for a choice...",
+    sticksLeft: "Sticks remaining:",
+    replayBtn: "Replay",
+    revealGirl: "🎀 IT'S A GIRL 🎀",
+    revealBoy: "🎩 IT'S A BOY 🎩",
+    alertHow: "Rules:\n- Choose your team: girl 🎀 or boy 🎩.\n- You play against the computer 💻.\n- Each turn, color between 1 and 3 sticks.\n- Whoever colors the last stick reveals the baby's gender 👶."
+  }
+};
+
+let currentLang = 'fr';
+
+function setLanguage(lang){
+  currentLang = lang;
+  document.querySelectorAll('.languageSelector img').forEach(img=>{
+    img.classList.toggle('active', img.dataset.lang===lang);
+  });
+  document.querySelectorAll('[data-text]').forEach(el=>{
+    const key = el.dataset.text;
+    if(translations[lang][key]){
+      el.innerHTML = translations[lang][key];
+    }
+  });
+}
+
+document.querySelectorAll('.languageSelector img').forEach(img=>{
+  img.addEventListener('click', ()=> setLanguage(img.dataset.lang));
+});
+
+const realBabyGender="boy", maxTake=3;
+let totalSticks, sticksLeft, playerTeam, turn, gameActive, confettiPieces=[];
+const sticksContainer=document.getElementById("sticks"),
+      remainingEl=document.getElementById("remaining"),
+      turnInfo=document.getElementById("turnInfo"),
+      statusBox=document.getElementById("statusBox"),
+      overlay=document.getElementById("overlay"),
+      ctx=document.getElementById("confettiCanvas").getContext("2d");
+
+/* ========== INIT UI ========== */
+function createSticks(n){
+  sticksContainer.innerHTML = '';
+  for(let i=0;i<n;i++){
+    const s = document.createElement('div');
+    s.className = 'stick';
+    s.setAttribute('data-index', i);
+    sticksContainer.appendChild(s);
+  }
+}
+
+function render(){
+  remainingEl.innerText = sticksLeft;
+
+  if(gameActive){
+    // Tour en cours
+    if(turn==='player'){
+      turnInfo.innerText = (currentLang==='fr'?'Tour : Joueur': currentLang==='it'?'Turno: Giocatore':'Turn: Player');
+    } else if(turn==='ai'){
+      turnInfo.innerText = (currentLang==='fr'?'Tour : Ordinateur': currentLang==='it'?'Turno: Computer':'Turn: Computer');
+    }
+
+    // Texte de statut : équipe et qui joue en premier
+    if(playerTeam){
+      const teamText = playerTeam==='girl' ?
+        (currentLang==='fr'?'Tu es dans l\'équipe Fille 🎀': currentLang==='it'?'Sei nel team Ragazza 🎀':'You are in the Girl team 🎀') :
+        (currentLang==='fr'?'Tu es dans l\'équipe Garçon 🎩': currentLang==='it'?'Sei nel team Ragazzo 🎩':'You are in the Boy team 🎩');
+      const firstText = ((playerTeam === realBabyGender) ?
+        (currentLang==='fr'?'Ton équipe joue en premier': currentLang==='it'?'Il tuo team gioca per primo':'Your team plays first') :
+        (currentLang==='fr'?'L\'équipe adverse joue en premier': currentLang==='it'?'Il team avversario gioca per primo':'The opposing team plays first'));
+      statusBox.innerText = `${teamText}\n${firstText}`;
+    } else {
+      statusBox.innerText = translations[currentLang].statusBox;
+    }
+
+  } else {
+    turnInfo.innerText = '—';
+    statusBox.innerText = translations[currentLang].statusBox;
+  }
+}
+
+/* ========== STRATEGIE NIM ========== */
+function decideStarterWithMultipleRule(total, playerShouldWin){
+  let starter = playerShouldWin ? 'player' : 'ai';
+  if(total % (maxTake + 1) === 0){
+    starter = (starter === 'player') ? 'ai' : 'player';
+  }
+  return starter;
+}
+
+function computeAiTake(sticks, targetMod, helping=false){
+  const modBase = maxTake + 1;
+  let take = (sticks - targetMod) % modBase;
+  if(take === 0) take = modBase;
+  take = ((take - 1) % maxTake) + 1;
+  if(take > sticks) take = sticks;
+  if(helping && take === sticks && sticks > 1){
+    take = Math.max(1, Math.min(maxTake, sticks - 1));
+  }
+  return take;
+}
+
+/* ========== ACTIONS: color / check / end ========== */
+function colorSticks(count, who){
+  const sticks = Array.from(document.querySelectorAll('.stick'));
+  let remainingToColor = count;
+  for(let i=sticks.length-1;i>=0 && remainingToColor>0;i--){
+    const el = sticks[i];
+    if(!el.classList.contains('colored-pink') && !el.classList.contains('colored-blue')){
+      if(who === 'girl') el.classList.add('colored-pink');
+      else el.classList.add('colored-blue');
+      remainingToColor--;
+      el.style.transform = 'translateY(-12px) rotate(' + (Math.random()*8-4) + 'deg)';
+      setTimeout(()=> el.style.transform = '', 500);
+    }
+  }
+}
+
+function checkEnd(by){
+  if(sticksLeft <= 0){
+    gameActive = false;
+    showReveal(realBabyGender, by);
+  }
+}
+
+/* ========== JOUEUR ========== */
+function playerTake(n){
+  if(!gameActive || turn !== 'player') return;
+  n = Math.max(1, Math.min(maxTake, n));
+  if(n > sticksLeft) n = sticksLeft;
+
+  colorSticks(n, playerTeam);
+  sticksLeft -= n;
+
+  turn = 'ai';
+  render();
+  checkEnd('player');
+
+  if(gameActive){
+    setTimeout(()=>{
+      aiTurn();
+      if(gameActive){
+        turn = 'player';
+        render();
+      }
+    }, 2000);
+  }
+}
+
+/* ========== IA ========== */
+function aiTurn(){
+  if(!gameActive || turn !== 'ai') return;
+  const playerShouldWin = (playerTeam === realBabyGender);
+  const iaWantsToWin = !playerShouldWin;
+  const targetMod = iaWantsToWin ? 0 : 1;
+  const helping = !iaWantsToWin;
+  let take = computeAiTake(sticksLeft, targetMod, helping);
+  if(take < 1) take = 1;
+  if(take > sticksLeft) take = sticksLeft;
+
+  const aiTeam = (playerTeam === 'girl') ? 'boy' : 'girl';
+  colorSticks(take, aiTeam);
+  sticksLeft -= take;
+  checkEnd('ai');
+  render();
+}
+
+/* ========== REVEAL / CONFETTI / AUDIO ========== */
+function resizeCanvas(){
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function spawnConfetti(colorArray, count=140){
+  confettiPieces = [];
+  for(let i=0;i<count;i++){
+    confettiPieces.push({
+      x: Math.random()*confettiCanvas.width,
+      y: Math.random()*-confettiCanvas.height,
+      s: 6 + Math.random()*8,
+      r: Math.random()*360,
+      dx: (Math.random()-0.5)*4,
+      dy: 2 + Math.random()*6,
+      color: colorArray[Math.floor(Math.random()*colorArray.length)]
+    });
+  }
+  animateConfetti();
+}
+let confettiAnim;
+function animateConfetti(){
+  cancelAnimationFrame(confettiAnim);
+  ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+  confettiPieces.forEach(p=>{
+    p.x += p.dx;
+    p.y += p.dy;
+    p.r += 6;
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(p.r*Math.PI/180);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.s/2, -p.s/2, p.s, p.s*0.6);
+    ctx.restore();
+  });
+  confettiPieces = confettiPieces.filter(p => p.y < confettiCanvas.height + 40);
+  if(confettiPieces.length>0) confettiAnim = requestAnimationFrame(animateConfetti);
+}
+
+function playRevealSound(gender){
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if(!AudioCtx) return;
+  const actx = new AudioCtx();
+  const now = actx.currentTime;
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(gender === 'girl' ? 720 : 320, now);
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+  o.connect(g);
+  g.connect(actx.destination);
+  o.start(now);
+  o.stop(now + 1.05);
+}
+
+function showReveal(gender, by){
+  const rSex = document.getElementById('revealSex');
+  const overlayEl = document.getElementById('overlay');
+  const card = overlayEl.querySelector('.cardReveal');
+  const replayBtn = overlayEl.querySelector('.btn');
+
+  card.classList.remove('girl','boy');
+  replayBtn.classList.remove('girl','boy');
+
+  if(gender === 'girl'){
+    rSex.innerHTML = translations[currentLang].revealGirl;
+    spawnConfetti(['#ffb6d9','#ff7fbf','#ffd6e8', '#fff0f9'], 180);
+    card.classList.add('girl');
+    replayBtn.classList.add('girl');
+  } else {
+    rSex.innerHTML = translations[currentLang].revealBoy;
+    spawnConfetti(['#bcd9ff','#8fb8ff','#cfe6ff', '#eef8ff'], 180);
+    card.classList.add('boy');
+    replayBtn.classList.add('boy');
+  }
+
+  overlayEl.classList.add('show');
+  overlayEl.setAttribute('aria-hidden', 'false');
+
+  playRevealSound(gender);
+
+  replayBtn.onclick = ()=>{
+    overlayEl.classList.remove('show');
+    overlayEl.setAttribute('aria-hidden','true');
+    initGame();
+  };
+}
+
+/* ========== EVENTS UI ========== */
+document.getElementById('teamGirl').addEventListener('click', ()=> selectTeam('girl'));
+document.getElementById('teamBoy').addEventListener('click', ()=> selectTeam('boy'));
+document.getElementById('teamGirl').addEventListener('keydown', (e)=> { if(e.key==='Enter') selectTeam('girl');});
+document.getElementById('teamBoy').addEventListener('keydown', (e)=> { if(e.key==='Enter') selectTeam('boy');});
+
+function selectTeam(which){
+  playerTeam = which;
+  document.getElementById('teamGirl').classList.toggle('active', which==='girl');
+  document.getElementById('teamBoy').classList.toggle('active', which==='boy');
+  document.getElementById('teamGirl').setAttribute('aria-checked', which==='girl');
+  document.getElementById('teamBoy').setAttribute('aria-checked', which==='boy');
+
+  const input = document.getElementById('sticksInput');
+  totalSticks = Math.max(7, Math.min(199, parseInt(input.value) || 21));
+  sticksLeft = totalSticks;
+  createSticks(sticksLeft);
+  gameActive = true;
+
+  const playerShouldWin = (playerTeam === realBabyGender);
+  turn = decideStarterWithMultipleRule(totalSticks, playerShouldWin);
+  render();
+  document.getElementById('playerControls').setAttribute('aria-hidden','false');
+
+  if(turn === 'ai'){
+    setTimeout(()=> {
+      render();
+      aiTurn();
+      if(gameActive){
+        turn = 'player';
+        render();
+      }
+    }, 2000);
+  }
+}
+
+document.querySelectorAll('.takeBtns .btn').forEach(btn => {
+  btn.addEventListener('click', ()=> {
+    const n = parseInt(btn.getAttribute('data-take'), 10);
+    playerTake(n);
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=> initGame());
+document.getElementById('howBtn').addEventListener('click', ()=> {
+  alert(translations[currentLang].alertHow);
+});
+document.getElementById('sticksInput').addEventListener('change', (e)=>{
+  let v = Math.max(7, Math.min(199, parseInt(e.target.value) || 21));
+  e.target.value = v;
+});
+
+/* keyboard 1/2/3 shortcuts */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === '1' || e.key === '2' || e.key === '3'){
+    const n = parseInt(e.key,10);
+    if(gameActive && turn==='player') playerTake(n);
+  }
+});
+
+/* ========== INIT / RESET ========== */
+function initGame(){
+  const input = document.getElementById('sticksInput');
+  totalSticks = Math.max(7, Math.min(199, parseInt(input.value) || 21));
+  sticksLeft = totalSticks;
+  playerTeam = null;
+  turn = null;
+  gameActive = false;
+  createSticks(sticksLeft);
+  document.getElementById('teamGirl').classList.remove('active');
+  document.getElementById('teamBoy').classList.remove('active');
+  document.getElementById('playerControls').setAttribute('aria-hidden','true');
+  render();
+  confettiPieces = [];
+  ctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+}
+
+initGame();
+
+</script>
+
+</body>
+</html>
